@@ -4,13 +4,47 @@ const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
 
+
+
 if(process.argv.length < 4)
 {
-    console.log("not enough arguments, please include both a key and value (2 arguments")
+    console.log("not enough arguments, please include an action(add/delete) and  a key:value (in that format with a colon")
     return;
 }
-const TAG_KEY = process.argv[2];
-const TAG_VALUE = process.argv[3];
+
+const ACTION = process.argv[2].toLowerCase().trim();
+const TAG_KEY_VALUE = process.argv[3];
+var TAG_KEY = "";
+var TAG_VALUE = "";
+
+if(ACTION === 'add')
+{
+    var parts = TAG_KEY_VALUE.split(":");
+    if(parts.length != 2)
+    {
+        console.log("Error parsing tag key or value, please format as:    tagkey:tagvalue")
+        return; 
+    }
+    else
+    {
+        
+        TAG_KEY = parts[0];
+        TAG_VALUE = parts[1];
+        console.log("Performing Tag Add Action: " + TAG_KEY + " : " + TAG_VALUE);
+    } 
+}
+else if (ACTION === 'delete')
+{
+   // for delete we only expect a key.
+   console.log("Performing Tag Delete Action: "+ TAG_KEY); 
+   TAG_KEY = TAG_KEY_VALUE;
+}
+else
+{
+    console.log("Error, invalid action,  valid actions are :  add or delete")
+    return;
+}
+
 
 var API_KEY = "";
 // fetch apk key from file called api_key.txt
@@ -36,7 +70,6 @@ try {
     console.error(err)
 }
 
-console.log("key : value   " + TAG_KEY + ":"+ TAG_VALUE);
 console.log("=======================================");
 
 const file = readline.createInterface({
@@ -49,6 +82,7 @@ var sendcount = 0;
 
 console.log("Processing GUID file...");
 
+file.line
 
 file.on('line', (line) => {
 
@@ -57,16 +91,37 @@ file.on('line', (line) => {
     var guidval = line.trim()
     consolelogline += ":   " + guidval;
 
-    var data2 = JSON.stringify({
-        query: `mutation ($guidval: EntityGuid!, $tag_key: String!, $tag_value: String!) {
-    taggingAddTagsToEntity(guid: $guidval,tags: { key: $tag_key, values: [$tag_value]}) {
-            errors {
-                message
+    var datapayload = "";
+
+    if(ACTION === 'add')
+    {
+        datapayload = JSON.stringify({
+            query: `mutation ($guidval: EntityGuid!, $tag_key: String!, $tag_value: String!) {
+        taggingAddTagsToEntity(guid: $guidval,tags: { key: $tag_key, values: [$tag_value]}) {
+                errors {
+                    message
+                }
             }
-        }
-     }`,
-        variables: {"guidval":guidval, "tag_key": TAG_KEY, "tag_value": TAG_VALUE}
-    });
+         }`,
+            variables: {"guidval":guidval, "tag_key": TAG_KEY, "tag_value": TAG_VALUE}
+        });
+    }
+    else
+    {
+        datapayload = JSON.stringify({
+            query: `mutation ($guidval: EntityGuid!, $tag_key: String!, $tag_value: String!) {
+        taggingDeleteTagsToEntity(guid: $guidval,tagKeys:  $tag_key) {
+                errors {
+                    message
+                }
+            }
+         }`,
+            variables: {"guidval":guidval, "tag_key": TAG_KEY}
+        });
+    }
+
+
+  
 
     var config = {
         method: 'post',
@@ -75,7 +130,7 @@ file.on('line', (line) => {
             'Content-Type': 'application/json',
             'API-Key': API_KEY
         },
-        data : data2
+        data : datapayload
     };
 
     axios(config)
@@ -96,4 +151,10 @@ file.on('line', (line) => {
         });
 });
 
-console.log("Bulk tag complete.");
+
+
+file.on('close', () => {
+
+    console.log("Bulk tag processing is complete." + sendcount + " items");
+});
+
