@@ -1,27 +1,25 @@
 [![New Relic Experimental header](https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Experimental.png)](https://opensource.newrelic.com/oss-category/#new-relic-experimental)
 
-# [Name of Project] [build badges go here when available]
+# nr-bulktagger 
 
->[Brief description - what is the project and value does it provide? How often should users expect to get releases? How is versioning set up? Where does this project want to go?]
+> This nodejs project is a command line utility for performing bulk tagging of newrelic guid entities.  
+  Currently it only supports adding tags.  
 
 ## Installation
 
-> [Include a step-by-step procedure on how to get your code installed. Be sure to include any third-party dependencies that need to be installed separately]
+>  install required modules:  npm install
 
 ## Getting Started
->[Simple steps to start working with the software similar to a "Hello World"]
-
-## Usage
->[**Optional** - Include more thorough instructions on how to use the software. This section might not be needed if the Getting Started section is enough. Remove this section if it's not needed.]
-
-
-## Building
-
->[**Optional** - Include this section if users will need to follow specific instructions to build the software from source. Be sure to include any third party build dependencies that need to be installed separately. Remove this section if it's not needed.]
-
-## Testing
-
->[**Optional** - Include instructions on how to run tests if we include tests with the codebase. Remove this section if it's not needed.]
+> This utility requres 2 things:  
+  1 .  A NewRelic admin api key,  please place this value into the file api_key.txt located in the root directory.
+  2.  A list of entity guids you want to add a tag to.   Please place this list of guids into the file entity_guid_list.txt.
+      For the format, please see the file entity_guid_example.txt.   
+	  
+	When running the application, it requies 2 arguments, the desired tag key and value.  
+    e.g
+         node index.js  [tag-key] [tag-value]   
+		 
+	The utility will tag each guid in the list provided, and the result of the tagging will show in the console output.
 
 ## Support
 
