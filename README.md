@@ -18,8 +18,9 @@
 	When running the application, it requies 2 arguments, an action (add/delete) and the tag key / value
     examples:
 	
-        1. add key:   node index.js add customkey:customvalue   
-		2. delete key: node index.js delete customkey
+     add key:   node index.js add customkey:customvalue   
+	 
+	 delete key: node index.js delete customkey
 		 
 		 
 	The utility will either add or delete the specified tag from each guid, and
@@ -29,7 +30,6 @@
 
 New Relic hosts and moderates an online forum where customers can interact with New Relic employees as well as other customers to get help and share best practices. Like all official New Relic open source projects, there's a related Community topic in the New Relic Explorers Hub. You can find this project's topic/threads here:
 
->Add the url for the support thread here
 
 ## Contributing
 We encourage your contributions to improve nr-bulktagger! Keep in mind when you submit your pull request, you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per project.
