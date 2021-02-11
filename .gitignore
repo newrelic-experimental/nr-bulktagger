@@ -1,5 +1,4 @@
-api_key.txt
-entity_guid_example.txt
-entity_guid_list.txt
 /.vscode
 /node_modules
+api_key.txt
+entity_guid_list.txt
