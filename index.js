@@ -155,6 +155,6 @@ file.on('line', (line) => {
 
 file.on('close', () => {
 
-    console.log("Bulk tag processing is complete." + sendcount + " items");
+   // console.log("Bulk tag processing is complete." + sendcount + " items");
 });
 
