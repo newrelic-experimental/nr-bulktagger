@@ -53,6 +53,9 @@ try {
     if(fs.existsSync('api_key.txt')) {
         const data = fs.readFileSync('api_key.txt', 'utf8');
         API_KEY = data;
+        API_KEY = data.replace(/(\r\n|\n|\r)/gm, "");
+
+        console.log("APIKEY FOUND: " + API_KEY)
     }
     else
     {
