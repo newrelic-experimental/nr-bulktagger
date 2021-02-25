@@ -38,7 +38,7 @@ else if (ACTION === 'delete') {
     TAG_KEY = TAG_KEY_VALUE;
 }
 else if (ACTION === 'addcsv') {
-    console.log("Performing Tag Add Tags per CSV file, looking for entity_guid_list.csv"
+    console.log("Performing Tag Add Tags per CSV file, looking for entity_guid_list.csv");
     // were ok.. look for csv file (todo) 
 }
 else {
@@ -95,6 +95,12 @@ if (ACTION == 'addcsv') {
             if (linecount <= 0) {
                 // assume header/,, store. 
                 headers_cache = line.split(",");
+
+                if(headers_cache.length != 3)
+                {
+                    console.log("Incorrect headers, must have 3 columns total");
+                    return;
+                }
                 for (var i = 0; i < headers_cache.length; i++) {
                     headers_cache[i] = headers_cache[i].trim(); //remove all spaces 
                 }
@@ -104,12 +110,19 @@ if (ACTION == 'addcsv') {
                 var consolelogline = sendcount;
 
                 var parts = line.split(",");
+                
+                if(parts.length != 3)
+                {
+                    console.log("Incorrect number of columns on line: " + linecount + "  .... aborting");
+                    return;
+                }
+
                 var values = []
                 for (var k = 0; k < parts.length; k++) {
                     values[k] = parts[k].trim();
                 }
                 var guidval = values[0];
-                consolelogline += ":   " + guidval;
+                consolelogline += ":   " + guidval +  "  | "  + values[1] +  "  |  " + values[2];
 
                 datapayload = JSON.stringify({
                     query: `mutation ($guidval: EntityGuid!, $tag_key1: String!, $tag_value1: String!,  $tag_key2: String!, $tag_value2: String! ) {
