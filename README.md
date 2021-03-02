@@ -3,7 +3,10 @@
 # nr-bulktagger 
 
 > This nodejs project is a command line utility for performing bulk tagging of newrelic guid entities.  
-  Currently it only supports both adding and deleting tags
+  Currently it supports 3 operations: 
+  * adding a single tag from a list of guids(file)
+  * deleting a single tag from a list of guids(file)
+  * adding any number of tags to a list of guids, all defined in a simple csv (see example format). 
 
 ## Installation
 
@@ -12,18 +15,25 @@
 ## Getting Started
 > This utility requres 2 things:  
   1 .  A NewRelic admin api key,  please place this value into the file api_key.txt located in the root directory.
-  2.  A list of entity guids you want to add a tag to.   Please place this list of guids into the file entity_guid_list.txt.
-      For the format, please see the file entity_guid_example.txt.   
+  
+  2.  An input file.  
+  
+      For adding/deleting a single tag to a list of guids,  the file should only contain a list of guids, nothing else.
+      Please place this list of guids into the file entity_guid_list.txt.  For an example, see the file entity_guid_example.txt   
 	  
-	When running the application, it requies 2 arguments, an action (add/delete) and the tag key / value
-    examples:
-	
+	  For adding multiple tags to a list guids, the file needs to be in csv format. 
+	  The csv file must be called entity_guid_list.csv.
+      For an example please see the file entity_guild_example.csv
+	  
+	 here are examples of all 3 supported commands: 
+	  
      add key:   node index.js add customkey:customvalue   
 	 
 	 delete key: node index.js delete customkey
-		 
-		 
-	The utility will either add or delete the specified tag from each guid, and
+	 
+	 add tags by csv: node index.js. addcsv 
+	 
+	The utility will execute the command, and
 	the result of the tagging will show in the console output.
 
 ## Support
