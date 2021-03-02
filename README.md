@@ -27,11 +27,11 @@
 	  
 	 here are examples of all 3 supported commands: 
 	  
-     add key:   node index.js add customkey:customvalue   
+     add key:   node index.js add customkey:customvalue    -- (depends on input file entity_guid_list.txt)
 	 
-	 delete key: node index.js delete customkey
+	 delete key: node index.js delete customkey     -- (depends on input file entity_guid_list.txt)
 	 
-	 add tags by csv: node index.js. addcsv 
+	 add tags by csv: node index.js. addcsv      -- (depends on input file entity_guid_list.csv)
 	 
 	The utility will execute the command, and
 	the result of the tagging will show in the console output.
