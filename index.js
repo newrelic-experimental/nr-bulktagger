@@ -1,41 +1,108 @@
-
 var axios = require('axios');
 const csvreader = require('csv-parser');
 const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
 
-const guid_list_cache = [];
-
-var headers_cache = [];
-
-//if (process.argv.length < 4) {
-//   console.log("not enough arguments, please include an action(add/delete) and  a key:value (in that format with a colon")
-//   return;
-//}
-
-const ACTION = process.argv[2].toLowerCase().trim();
-const TAG_KEY_VALUE = process.argv[3];
+var ACTION = ""; //process.argv[2].toLowerCase().trim();
+var TAG_KEY_VALUE = ""; //process.argv[3];
 var TAG_KEY = "";
 var TAG_VALUE = "";
 
+
+
+if(process.argv.length < 3)
+{
+    console.log("Invalid parameters, need atleast one parameter");
+    return;
+}
+
+// you have atleast one param: 
+
+ACTION = process.argv[2].toLowerCase().trim();
+
+/**
+ * util function to send out the tags to NewRelic
+ * @param {} datapayload 
+ * @param {*} callback 
+ */
+function dispatchToNewRelic(datapayload, callback)
+{
+    var config = {
+        method: 'post',
+        url: 'https://api.newrelic.com/graphql',
+        headers: {
+            'Content-Type': 'application/json',
+            'API-Key': API_KEY
+        },
+        data: datapayload
+    };
+
+    axios(config)
+        .then(function (response) {
+            if (response.status == 200) {
+                if(response.data.errors != null)
+                {
+                    callback("failed: " + JSON.stringify(response.data.errors));
+                }
+                else
+                   callback("success");     
+            }
+            else {
+                callback("failed");
+            }
+        })
+        .catch(function (error) {
+            callback("exception" );    
+        });
+}
+
+
+// start of handlers... 
 if (ACTION === 'add') {
+
+    if(process.argv.length != 4)
+    {
+        console.log("Invalid parameters, should be:   add  tagkey:tagvalue")
+        return;
+    }
+
+    if(!fs.existsSync( 'entity_guid_list.txt' ))
+    {
+        console.log("Error:  entity_guild_list.txt file does not exist in root path");
+        return;
+    }
+
+    TAG_KEY_VALUE =  process.argv[3];
     var parts = TAG_KEY_VALUE.split(":");
     if (parts.length != 2) {
         console.log("Error parsing tag key or value, please format as:    tagkey:tagvalue")
         return;
     }
     else {
-
         TAG_KEY = parts[0];
         TAG_VALUE = parts[1];
         console.log("Performing Tag Add Action: " + TAG_KEY + " : " + TAG_VALUE);
     }
 }
 else if (ACTION === 'delete') {
+    if(process.argv.length != 4)
+    {
+        console.log("Invalid parameters, should be:   delete  tagkey")
+        return;
+    }
+
+    if(!fs.existsSync( 'entity_guid_list.txt' ))
+    {
+        console.log("Error:  entity_guild_list.txt file does not exist in root path");
+        return;
+    }
+
+    TAG_KEY_VALUE = process.argv[3];
+    TAG_KEY = TAG_KEY_VALUE;
     // for delete we only expect a key.
     console.log("Performing Tag Delete Action: " + TAG_KEY);
-    TAG_KEY = TAG_KEY_VALUE;
+  
 }
 else if (ACTION === 'addcsv') {
     console.log("Performing Tag Add Tags per CSV file, looking for entity_guid_list.csv");
@@ -72,9 +139,10 @@ try {
 
 console.log("=======================================");
 
+
 // version 2... tags are in the guid list file... 
 if (ACTION == 'addcsv') {
-
+    var headers_cache = [];
     try {
 
         const file = readline.createInterface({
@@ -87,8 +155,7 @@ if (ACTION == 'addcsv') {
         var linecount = 0;
         console.log("Processing GUID CSV TAGS file...");
 
-        // file.line
-
+    
         var headers_cache
         file.on('line', (line) => {
 
@@ -96,9 +163,8 @@ if (ACTION == 'addcsv') {
                 // assume header/,, store. 
                 headers_cache = line.split(",");
 
-                if(headers_cache.length != 3)
-                {
-                    console.log("Incorrect headers, must have 3 columns total");
+                if (headers_cache.length < 2) {
+                    console.log("Incorrect headers, must have atleast 2 columns, a guid + 1 min ");
                     return;
                 }
                 for (var i = 0; i < headers_cache.length; i++) {
@@ -108,12 +174,10 @@ if (ACTION == 'addcsv') {
             else {
                 sendcount++;
                 var consolelogline = sendcount;
-
                 var parts = line.split(",");
-                
-                if(parts.length != 3)
-                {
-                    console.log("Incorrect number of columns on line: " + linecount + "  .... aborting");
+
+                if (parts.length != headers_cache.length) {
+                    console.log("Incorrect number of columns on line: " + linecount + "  .... skipping ");
                     return;
                 }
 
@@ -122,45 +186,34 @@ if (ACTION == 'addcsv') {
                     values[k] = parts[k].trim();
                 }
                 var guidval = values[0];
-                consolelogline += ":   " + guidval +  "  | "  + values[1] +  "  |  " + values[2];
+                consolelogline += ":   " + guidval;
+
+                var tags_array = []; //create tags array to send down. 
+                for(var i = 1 ; i < values.length; i++)
+                {
+                    var obj = {};
+                    obj.key = headers_cache[i];
+                    obj.values = values[i];
+                    tags_array.push(obj);
+                    consolelogline += " |   " + values[i];
+                }
 
                 datapayload = JSON.stringify({
-                    query: `mutation ($guidval: EntityGuid!, $tag_key1: String!, $tag_value1: String!,  $tag_key2: String!, $tag_value2: String! ) {
-    taggingAddTagsToEntity(guid: $guidval,tags: [{ key: $tag_key1, values: [$tag_value1]}, { key: $tag_key2, values: [$tag_value2]}]) {
-            errors {
-                message
-            }
-        }
-     }`,
-                    variables: { "guidval": guidval, "tag_key1": headers_cache[1], "tag_value1": values[1], "tag_key2": headers_cache[2], "tag_value2": values[2] }
+                    query: `mutation ($guidval: EntityGuid!, $tag_data: [TaggingTagInput!]! ) {
+                    taggingAddTagsToEntity(guid: $guidval,tags: $tag_data) {
+                            errors {
+                                message
+                            }
+                        }
+                    }`,
+                    variables: { "guidval": guidval, "tag_data": tags_array }
                 });
 
-                var config = {
-                    method: 'post',
-                    url: 'https://api.newrelic.com/graphql',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'API-Key': API_KEY
-                    },
-                    data: datapayload
-                };
 
-                axios(config)
-                    .then(function (response) {
-                        if (response.status == 200) {
-                            consolelogline += "   ===>  success"
-                        }
-                        else {
-                            consolelogline += " failed"
-                        }
-                        console.log(consolelogline);
-                        //  console.log(JSON.stringify(response.data));
-                    })
-                    .catch(function (error) {
-                        consolelogline += " exception";
-                        console.log(consolelogline);
-                        //console.log("exception: " + error);
-                    });
+                dispatchToNewRelic(datapayload, function(result){
+                    consolelogline += " : " + result;
+                    console.log(consolelogline);
+                })
             }
             linecount++;
 
@@ -182,8 +235,6 @@ else if (ACTION == 'add' || ACTION == 'delete') {  //  Line by line,,, guid only
     var sendcount = 0;
 
     console.log("Processing GUID file...");
-
-    file.line
 
     file.on('line', (line) => {
 
@@ -208,8 +259,8 @@ else if (ACTION == 'add' || ACTION == 'delete') {  //  Line by line,,, guid only
         }
         else {
             datapayload = JSON.stringify({
-                query: `mutation ($guidval: EntityGuid!, $tag_key: String!, $tag_value: String!) {
-        taggingDeleteTagsToEntity(guid: $guidval,tagKeys:  $tag_key) {
+                query: `mutation ($guidval: EntityGuid!, $tag_key: String!) {
+        taggingDeleteTagFromEntity(guid: $guidval,tagKeys:  [$tag_key]) {
                 errors {
                     message
                 }
@@ -219,39 +270,18 @@ else if (ACTION == 'add' || ACTION == 'delete') {  //  Line by line,,, guid only
             });
         }
 
-        var config = {
-            method: 'post',
-            url: 'https://api.newrelic.com/graphql',
-            headers: {
-                'Content-Type': 'application/json',
-                'API-Key': API_KEY
-            },
-            data: datapayload
-        };
-
-        axios(config)
-            .then(function (response) {
-                if (response.status == 200) {
-                    consolelogline += "   ===>  success"
-                }
-                else {
-                    consolelogline += " failed"
-                }
-                console.log(consolelogline);
-                //  console.log(JSON.stringify(response.data));
-            })
-            .catch(function (error) {
-                consolelogline += " exception";
-                console.log(consolelogline);
-                //console.log("exception: " + error);
-            });
+        dispatchToNewRelic(datapayload, function(result){
+            consolelogline += " : " + result;
+            console.log(consolelogline);
+        })
     });
 
 
     file.on('close', () => {
-
         // console.log("Bulk tag processing is complete." + sendcount + " items");
     });
 
 
 }
+
+
